@@ -42,10 +42,9 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
         run: npm run build
-         VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: dist
-          branch: gh-pages
+         - name: Build Application
+  env:
+    VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+    VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+    # ... el resto que ya tienes
+  run: npm run build
