@@ -1,3 +1,7 @@
+export default defineConfig({
+  base: '/Plataforma-de-Alertas-de-Solventaci-n/',
+  //...
+})
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
