@@ -159,7 +159,7 @@ function getGeminiClient() {
 }
 async function startServer() {
   const app = (0, import_express.default)();
-  const PORT = 3e3;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3e3;
   app.use(import_express.default.json());
   app.get("/api/dependencies", (req, res) => {
     try {
