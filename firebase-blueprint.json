@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "dependency": {
+      "title": "Dependency",
+      "description": "A public dependency tracking its audit observations and alert status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "managerName": { "type": "string" },
+        "deadlineDate": { "type": "string" },
+        "alertDate": { "type": "string" },
+        "observations": { "type": "array" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "managerName", "deadlineDate", "alertDate", "observations", "status"]
+    },
+    "emailLog": {
+      "title": "EmailLog",
+      "description": "Log of alerts sent to dependencies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "dependencyId": { "type": "integer" },
+        "dependencyName": { "type": "string" },
+        "toEmail": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "sentAt": { "type": "string" },
+        "senderName": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "dependencyId", "dependencyName", "toEmail", "subject", "body", "sentAt", "senderName", "status"]
+    }
+  },
+  "firestore": {
+    "/dependencies/{dependencyId}": {
+      "schema": "dependency",
+      "description": "List of departments under audit"
+    },
+    "/emailLogs/{logId}": {
+      "schema": "emailLog",
+      "description": "History of dispatched email notifications"
+    }
+  }
+}

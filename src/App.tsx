@@ -27,6 +27,8 @@ import {
   Info
 } from 'lucide-react';
 import { Dependency, EmailLog } from './types';
+import { INITIAL_DEPENDENCIES } from './data/defaults';
+import * as dbService from './lib/dbService';
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -97,17 +99,11 @@ export default function App() {
   const fetchData = async (showToast = false) => {
     try {
       setIsRefreshing(true);
-      const resDeps = await fetch('/api/dependencies');
-      const dataDeps = await resDeps.json();
-      if (dataDeps.success) {
-        setDependencies(dataDeps.data);
-      }
+      const dataDeps = await dbService.getDependencies();
+      setDependencies(dataDeps);
 
-      const resLogs = await fetch('/api/email-logs');
-      const dataLogs = await resLogs.json();
-      if (dataLogs.success) {
-        setEmailLogs(dataLogs.data);
-      }
+      const dataLogs = await dbService.getEmailLogs();
+      setEmailLogs(dataLogs);
 
       if (showToast) {
         showGlobalToast('success', 'Base de datos sincronizada con éxito');
@@ -218,22 +214,12 @@ export default function App() {
         observations: formObservations
       };
 
-      const res = await fetch(`/api/dependencies/${selectedId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        showGlobalToast('success', 'Cambios guardados con éxito');
-        // Update local list state
-        setDependencies(prev => prev.map(d => d.id === selectedId ? data.data : d));
-      } else {
-        showGlobalToast('error', data.error || 'Ocurrió un error al guardar');
-      }
-    } catch (err) {
-      showGlobalToast('error', 'Error en el guardado de parámetros');
+      const updated = await dbService.saveDependency(selectedId, payload);
+      showGlobalToast('success', 'Cambios guardados con éxito');
+      // Update local list state
+      setDependencies(prev => prev.map(d => d.id === selectedId ? updated : d));
+    } catch (err: any) {
+      showGlobalToast('error', err.message || 'Error en el guardado de parámetros');
     } finally {
       setIsSaving(false);
     }
@@ -258,30 +244,20 @@ export default function App() {
         observations: []
       };
 
-      const res = await fetch('/api/dependencies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        showGlobalToast('success', `Dependencia "${data.data.name}" registrada con éxito.`);
-        setDependencies(prev => [...prev, data.data]);
-        setSelectedId(data.data.id);
-        // Reset registration fields
-        setRegName('');
-        setRegEmail('');
-        setRegManager('');
-        setRegDeadline('2026-07-15');
-        setRegAlert('2026-07-01');
-        setRegStatus('al-corriente');
-        setShowRegisterForm(false);
-      } else {
-        showGlobalToast('error', data.error || 'Ocurrió un error al registrar.');
-      }
-    } catch (err) {
-      showGlobalToast('error', 'Fallo al procesar el registro con el servidor.');
+      const newDep = await dbService.createDependency(payload);
+      showGlobalToast('success', `Dependencia "${newDep.name}" registrada con éxito.`);
+      setDependencies(prev => [...prev, newDep]);
+      setSelectedId(newDep.id);
+      // Reset registration fields
+      setRegName('');
+      setRegEmail('');
+      setRegManager('');
+      setRegDeadline('2026-07-15');
+      setRegAlert('2026-07-01');
+      setRegStatus('al-corriente');
+      setShowRegisterForm(false);
+    } catch (err: any) {
+      showGlobalToast('error', err.message || 'Fallo al procesar el registro.');
     } finally {
       setIsRegistering(false);
     }
@@ -296,23 +272,18 @@ export default function App() {
     }
 
     try {
-      const res = await fetch(`/api/dependencies/${depId}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        showGlobalToast('info', `Registro "${depToDelete.name}" eliminado.`);
-        const remaining = dependencies.filter(d => d.id !== depId);
-        setDependencies(remaining);
-        // Select first available dependency if exists
-        if (remaining.length > 0) {
-          setSelectedId(remaining[0].id);
-        } else {
-          setSelectedId(null);
-        }
+      await dbService.deleteDependency(depId);
+      showGlobalToast('info', `Registro "${depToDelete.name}" eliminado.`);
+      const remaining = dependencies.filter(d => d.id !== depId);
+      setDependencies(remaining);
+      // Select first available dependency if exists
+      if (remaining.length > 0) {
+        setSelectedId(remaining[0].id);
       } else {
-        showGlobalToast('error', data.error || 'Error al eliminar');
+        setSelectedId(null);
       }
-    } catch (err) {
-      showGlobalToast('error', 'Error en la eliminación del registro.');
+    } catch (err: any) {
+      showGlobalToast('error', err.message || 'Error en la eliminación del registro.');
     }
   };
 
@@ -323,17 +294,12 @@ export default function App() {
     }
     try {
       setIsRefreshing(true);
-      const res = await fetch('/api/dependencies/clear', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setDependencies([]);
-        setSelectedId(null);
-        showGlobalToast('info', 'Base de datos vaciada con éxito. Listo para ingresos manuales.');
-      } else {
-        showGlobalToast('error', 'No se pudo vaciar la base de datos');
-      }
-    } catch (err) {
-      showGlobalToast('error', 'Fallo en la comunicación con el servidor.');
+      await dbService.clearDependencies();
+      setDependencies([]);
+      setSelectedId(null);
+      showGlobalToast('info', 'Base de datos vaciada con éxito. Listo para ingresos manuales.');
+    } catch (err: any) {
+      showGlobalToast('error', err.message || 'Fallo en la comunicación.');
     } finally {
       setIsRefreshing(false);
     }
@@ -362,18 +328,15 @@ export default function App() {
     }
     try {
       setIsRefreshing(true);
-      const res = await fetch('/api/dependencies/reset', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setDependencies(data.data);
-        setSelectedId(1);
-        showGlobalToast('info', 'Parámetros restablecidos al estado de auditoría original');
-        // Clear logs too
-        await fetch('/api/email-logs/clear', { method: 'POST' });
-        setEmailLogs([]);
-      }
-    } catch (err) {
-      showGlobalToast('error', 'Error de restauración');
+      const data = await dbService.resetDependencies(INITIAL_DEPENDENCIES);
+      setDependencies(data);
+      setSelectedId(1);
+      showGlobalToast('info', 'Parámetros restablecidos al estado de auditoría original');
+      // Clear logs too
+      await dbService.clearEmailLogs();
+      setEmailLogs([]);
+    } catch (err: any) {
+      showGlobalToast('error', err.message || 'Error de restauración');
     } finally {
       setIsRefreshing(false);
     }
@@ -382,54 +345,41 @@ export default function App() {
   // Clear email delivery logs
   const handleClearLogs = async () => {
     try {
-      const res = await fetch('/api/email-logs/clear', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setEmailLogs([]);
-        showGlobalToast('info', 'Historial de despacho de alertas vaciado.');
-      }
-    } catch (err) {
-      showGlobalToast('error', 'No se pudo vaciar el historial.');
+      await dbService.clearEmailLogs();
+      setEmailLogs([]);
+      showGlobalToast('info', 'Historial de despacho de alertas vaciado.');
+    } catch (err: any) {
+      showGlobalToast('error', err.message || 'No se pudo vaciar el historial.');
     }
   };
 
   // AI Generation of professional email templates
   const handleGenerateAIEmail = async () => {
-    if (!selectedId) return;
+    if (!selectedId || !activeDep) return;
     setIsGenerating(true);
     setAiError(null);
     setDraftSubject('');
     setDraftBody('');
 
     try {
-      const payload = {
+      const generated = await dbService.generateAIAlertEmail({
         dependencyId: selectedId,
+        dependencyName: activeDep.name,
+        managerName: formManager || activeDep.managerName,
+        deadlineDate: formDeadline || activeDep.deadlineDate,
         tone: aiTone,
         observationsToInclude: selectedObservations,
         additionalNotes: additionalNotes,
         senderName: senderName
-      };
-
-      const res = await fetch('/api/generate-alert-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
-      if (data.success) {
-        setDraftSubject(data.data.subject || `Oficio Alerta de Solventación - ${activeDep?.name}`);
-        setDraftBody(data.data.body || '');
-        showGlobalToast('success', 'Borrador de Alerta Gubernamental redactado por IA.');
-      } else {
-        // Fallback draft generator in case Gemini SDK is missing credentials or errors out
-        setAiError(data.error);
-        generateMockAIFallback();
-        showGlobalToast('info', 'Se aplicó la plantilla de respaldo formal.');
-      }
+      setDraftSubject(generated.subject || `Oficio Alerta de Solventación - ${activeDep?.name}`);
+      setDraftBody(generated.body || '');
+      showGlobalToast('success', 'Borrador de Alerta Gubernamental redactado por IA.');
     } catch (err: any) {
       setAiError(err.message || 'Error de comunicación con el generador');
       generateMockAIFallback();
+      showGlobalToast('info', 'Se aplicó la plantilla de respaldo formal.');
     } finally {
       setIsGenerating(false);
     }
@@ -512,20 +462,15 @@ DGCH, Órgano de Fiscalización Estatal.`;
       `[8/8] 📬 Sincronización Completa. Mensaje despachado con éxito. ID de Entrega: ASE-${Math.random().toString(36).substring(3, 9).toUpperCase()}`
     ];
 
-    // Trigger api to log on server
     try {
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dependencyId: activeDep.id,
-          toEmail: formEmail || activeDep.email,
-          subject: draftSubject,
-          body: draftBody,
-          senderName: senderName
-        })
-      });
-      const serverData = await res.json();
+      const result = await dbService.sendAndLogEmail(
+        activeDep.id,
+        activeDep.name,
+        formEmail || activeDep.email,
+        draftSubject,
+        draftBody,
+        senderName
+      );
       
       // Simulate live ticking on terminal
       for (let i = 0; i < steps.length; i++) {
@@ -536,18 +481,14 @@ DGCH, Órgano de Fiscalización Estatal.`;
         }
       }
 
-      if (serverData.success) {
+      if (result.success) {
         showGlobalToast('success', `Alerta despachada exitosamente a ${activeDep.name}`);
-        // Fetch logs silently to update logs panel
-        const resLogs = await fetch('/api/email-logs');
-        const dataLogs = await resLogs.json();
-        if (dataLogs.success) {
-          setEmailLogs(dataLogs.data);
-        }
+        const updatedLogs = await dbService.getEmailLogs();
+        setEmailLogs(updatedLogs);
       }
-    } catch (err) {
+    } catch (err: any) {
       setConsoleLogs(prev => [...prev, "❌ ERROR CRÍTICO EN EL TRANSPORTE DE ENVÍO. Gateway fuera de línea."]);
-      showGlobalToast('error', 'Fallo al transmitir la notificación.');
+      showGlobalToast('error', err.message || 'Fallo al transmitir la notificación.');
     } finally {
       setIsSending(false);
     }

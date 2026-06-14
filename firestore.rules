@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidDependency(data) {
+      return data.id is int
+        && data.name is string && data.name.size() <= 200
+        && data.email is string && data.email.size() <= 200
+        && data.managerName is string && data.managerName.size() <= 200
+        && data.deadlineDate is string && data.deadlineDate.size() <= 20
+        && data.alertDate is string && data.alertDate.size() <= 20
+        && data.observations is list && data.observations.size() <= 50
+        && data.status is string && (data.status == 'al-corriente' || data.status == 'alerta-activa' || data.status == 'vencido' || data.status == 'solventado');
+    }
+
+    function isValidEmailLog(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.dependencyId is int
+        && data.dependencyName is string && data.dependencyName.size() <= 200
+        && data.toEmail is string && data.toEmail.size() <= 200
+        && data.subject is string && data.subject.size() <= 500
+        && data.body is string && data.body.size() <= 5000
+        && data.sentAt is string && data.sentAt.size() <= 50
+        && data.senderName is string && data.senderName.size() <= 200
+        && data.status is string && (data.status == 'success' || data.status == 'failed');
+    }
+
+    // Collection bindings
+    match /dependencies/{dependencyId} {
+      allow read: if true;
+      allow create, update: if isValidDependency(incoming());
+      allow delete: if true;
+    }
+
+    match /emailLogs/{logId} {
+      allow read: if true;
+      allow create: if isValidEmailLog(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

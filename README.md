@@ -91,6 +91,63 @@ npm start
 
 ---
 
+## ☁️ Despliegue en GitHub Pages con Firebase (Modo Cliente-Solo)
+
+Para que la aplicación funcione en **GitHub Pages** (donde no es posible ejecutar un servidor backend Express tradicional), la plataforma ha sido actualizada con un **Modo Dual Avanzado** con soporte nativo de **Firebase Firestore**:
+
+1. **Estructura Firestore**:
+   - Crea un proyecto en la consola de Firebase.
+   - Crea una base de datos Cloud Firestore en producción.
+   - Aplica las reglas definidas en el archivo local `firestore.rules` (o cópialas a la sección "Rules" de tu consola de Firebase).
+
+2. **Variables de Entorno para GitHub Actions / Vite / Vercel**:
+   Para alimentar la conexión web cliente directa con tu base de datos de Firebase en lugar de usar Express, configura los secretos del repositorio en GitHub o agrégalos a tu archivo `.env` de producción con el prefijo `VITE_`:
+   ```bash
+   VITE_FIREBASE_API_KEY="tu-api-key-de-firebase"
+   VITE_FIREBASE_AUTH_DOMAIN="tu-proyecto.firebaseapp.com"
+   VITE_FIREBASE_PROJECT_ID="tu-proyecto-id"
+   VITE_FIREBASE_FIRESTORE_DATABASE_ID="(default) o id-especifico"
+   VITE_FIREBASE_STORAGE_BUCKET="tu-proyecto.firebasestorage.app"
+   VITE_FIREBASE_MESSAGING_SENDER_ID="sender-id"
+   VITE_FIREBASE_APP_ID="app-id"
+   VITE_GEMINI_API_KEY="tu-gemini-api-key" # Para activar la IA del redactor directamente desde el navegador
+   ```
+
+3. **Publicación automatizada con GitHub Actions**:
+   Puedes crear un flujo de trabajo en `.github/workflows/deploy.yml` para compilar y desplegar a GitHub Pages en cada push:
+   ```yaml
+   name: Deploy to GitHub Pages
+   on:
+     push:
+       branches: [ main ]
+   permissions:
+     contents: write
+   jobs:
+     build-and-deploy:
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout
+           uses: actions/checkout@v4
+         - name: Install dependencies
+           run: npm ci
+         - name: Build SPA
+           env:
+             VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+             VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+             VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+             VITE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+             VITE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+             VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+             VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+           run: npm run build
+         - name: Deploy to GitHub Pages
+           uses: JamesIves/github-pages-deploy-action@v4
+           with:
+             folder: dist
+   ```
+
+---
+
 ## 🔐 Credenciales de Acceso Administrador
 
 Para ingresar y administrar el panel, inicie sesión en la pantalla de autenticación con las siguientes claves autorizadas por la DGCH:
