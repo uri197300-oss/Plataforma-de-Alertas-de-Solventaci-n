@@ -1,0 +1,6 @@
+{
+  "name": "Plataforma de Alertas de Solventación",
+  "description": "Plataforma gubernamental para gestionar tiempos de solventación por dependencia, configurar correos y fechas de alerta, y enviar notificaciones personalizadas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
