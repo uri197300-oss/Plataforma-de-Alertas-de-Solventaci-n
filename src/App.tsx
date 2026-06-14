@@ -614,12 +614,12 @@ DGCH, Órgano de Fiscalización Estatal.`;
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-905 overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
       
       {/* 1. TOP NAVIGATION BAR */}
       <header className="h-14 bg-slate-900 text-white flex items-center justify-between px-6 flex-shrink-0 shadow-md">
         <div className="flex items-center space-x-4">
-          <div className="bg-indigo-550 p-1.5 rounded-lg flex items-center justify-center">
+          <div className="bg-indigo-500 p-1.5 rounded-lg flex items-center justify-center">
             <Building2 className="w-5 h-5 text-indigo-400" />
           </div>
           <div>
@@ -655,7 +655,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
               <span className="block font-semibold text-slate-200">Donají Razo</span>
               <span className="block text-[10px] text-slate-400">DGCH</span>
             </div>
-            <div className="h-8 w-8 rounded-full bg-indigo-600 border-2 border-slate-755 flex items-center justify-center text-xs text-white font-bold tracking-wider select-none">
+            <div className="h-8 w-8 rounded-full bg-indigo-600 border-2 border-slate-700 flex items-center justify-center text-xs text-white font-bold tracking-wider select-none">
               DR
             </div>
             
@@ -681,7 +681,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
             </span>
           </div>
 
-          <div className="h-8 w-px bg-slate-250"></div>
+          <div className="h-8 w-px bg-slate-200"></div>
 
           <div className="flex flex-col">
             <span className="text-[9px] uppercase font-bold text-amber-500 tracking-widest">Alertas Activas</span>
@@ -691,7 +691,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
             </span>
           </div>
 
-          <div className="h-8 w-px bg-slate-250"></div>
+          <div className="h-8 w-px bg-slate-200"></div>
 
           <div className="flex flex-col">
             <span className="text-[9px] uppercase font-bold text-rose-500 tracking-widest">Plazo Vencido</span>
@@ -701,7 +701,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
             </span>
           </div>
 
-          <div className="h-8 w-px bg-slate-250"></div>
+          <div className="h-8 w-px bg-slate-200"></div>
 
           <div className="flex flex-col">
             <span className="text-[9px] uppercase font-bold text-emerald-500 tracking-widest">Solventado</span>
@@ -711,7 +711,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
             </span>
           </div>
 
-          <div className="h-8 w-px bg-slate-250"></div>
+          <div className="h-8 w-px bg-slate-200"></div>
 
           <div className="flex flex-col">
             <span className="text-[9px] uppercase font-bold text-blue-500 tracking-widest">Al Corriente</span>
@@ -732,7 +732,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
 
           <button 
             onClick={handleResetDatabase}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-250 cursor-pointer transition-colors flex items-center gap-1.5"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 cursor-pointer transition-colors flex items-center gap-1.5"
             title="Sintetizar base de datos original"
           >
             <Database className="w-3.5 h-3.5 text-slate-500" />
@@ -815,7 +815,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
               className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                 statusFilter === 'all'
                   ? 'bg-slate-800 text-white' 
-                  : 'text-slate-600 hover:bg-slate-150'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               Toda
@@ -835,7 +835,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
               className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all cursor-pointer flex items-center gap-1 ${
                 statusFilter === 'vencido'
                   ? 'bg-rose-600 text-white'
-                  : 'bg-rose-50 text-rose-700 border border-rose-250 hover:bg-rose-100'
+                  : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
               }`}
             >
               <span className="w-1 h-1 rounded-full bg-rose-500 inline-block"></span> Vencidas
@@ -984,7 +984,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                 className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-2 transition-all cursor-pointer ${
                   rightTab === 'editor'
                     ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-605 hover:bg-slate-100 hover:text-slate-800'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                 }`}
               >
                 <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -998,7 +998,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                 className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-2 transition-all cursor-pointer ${
                   rightTab === 'history'
                     ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-605 hover:bg-slate-100 hover:text-slate-800'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
                 }`}
               >
                 <History className="w-4 h-4 text-slate-500" />
@@ -1128,7 +1128,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                       <select
                         value={formStatus}
                         onChange={e => setFormStatus(e.target.value as Dependency['status'])}
-                        className="w-full text-xs p-1.5 border border-slate-250 bg-white rounded focus:ring-1 focus:focus:ring-indigo-500 focus:outline-hidden text-slate-800 font-semibold"
+                        className="w-full text-xs p-1.5 border border-slate-200 bg-white rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 font-semibold"
                       >
                         <option value="al-corriente">✅ Al Corriente / En Trámite Normal</option>
                         <option value="alerta-activa">⚠️ Alerta Activa / Plazo Próximo</option>
@@ -1207,7 +1207,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                       <button
                         type="button"
                         onClick={() => handleDeleteDependency(activeDep.id)}
-                        className="w-full bg-rose-50 hover:bg-rose-100 hover:text-rose-700 text-rose-650 border border-rose-200 text-xs font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full bg-rose-50 hover:bg-rose-100 hover:text-rose-700 text-rose-600 border border-rose-200 text-xs font-semibold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         title="Eliminar de forma permanente"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1222,7 +1222,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                     
                     <div className="border-b pb-2 flex justify-between items-center">
                       <div className="flex items-center gap-1.5 text-slate-800">
-                        <Wand2 className="w-4 h-4 text-indigo-505" />
+                        <Wand2 className="w-4 h-4 text-indigo-500" />
                         <h3 className="font-bold text-xs uppercase tracking-wider text-slate-600">Redactor de Oficios con IA</h3>
                       </div>
                       <span className="text-[10px] text-slate-400">Soporte Gemini 3.5 Flash</span>
@@ -1358,7 +1358,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                               rows={10}
                               value={draftBody}
                               onChange={e => setDraftBody(e.target.value)}
-                              className="w-full text-xs p-3 bg-amber-50/20 border border-amber-100 rounded-lg text-slate-750 font-sans leading-relaxed focus:ring-1 focus:ring-indigo-500 focus:outline-hidden whitespace-pre-wrap select-text resize-none"
+                              className="w-full text-xs p-3 bg-amber-50/20 border border-amber-100 rounded-lg text-slate-700 font-sans leading-relaxed focus:ring-1 focus:ring-indigo-500 focus:outline-hidden whitespace-pre-wrap select-text resize-none"
                             />
                             <p className="text-[9.5px] text-slate-400 mt-1 italic">
                               * Puede editar el correo directamente si desea agregar precisiones de último minuto.
@@ -1394,7 +1394,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                               <div className="space-y-1 max-h-40 overflow-y-auto">
                                 {consoleLogs.map((log, index) => (
                                   <div key={index} className="leading-snug">
-                                    <span className="text-slate-550 select-none">auditor@system:~$ </span>
+                                    <span className="text-slate-500 select-none">auditor@system:~$ </span>
                                     <span className={index === consoleLogs.length - 1 && !isSending ? "text-emerald-400 font-semibold" : ""}>
                                       {log}
                                     </span>
@@ -1411,7 +1411,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
 
                     {/* Explanation if draft not setup yet */}
                     {!draftBody && (
-                      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex gap-3 text-xs leading-relaxed text-indigo-805 select-none">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex gap-3 text-xs leading-relaxed text-indigo-800 select-none">
                         <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
                         <div>
                           <p className="font-semibold text-indigo-900">¿Cómo redactar y enviar un aviso de solventación temporal?</p>
@@ -1460,7 +1460,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
               {/* Grid or table representation of historical logs */}
               <div className="flex-1 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl max-h-[580px] min-h-0 bg-slate-50/30">
                 {emailLogs.length === 0 ? (
-                  <div className="py-20 text-center text-slate-450 text-xs flex flex-col items-center justify-center gap-2">
+                  <div className="py-20 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
                     <Mail className="w-10 h-10 text-slate-201" />
                     <span className="font-semibold text-slate-500">Aún no se ha realizado ningún despacho de alertas</span>
                     <p className="text-[11.5px] text-slate-400 max-w-sm">No hay registros de correo disponibles. Complete los datos de un oficio en la pestaña anterior y envíela por el simulador de enrutamiento.</p>
@@ -1474,7 +1474,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                             <span className="text-[10px] bg-slate-100 font-mono border text-slate-500 px-1.5 py-0.2 rounded">
                               ID: {log.id}
                             </span>
-                            <span className="text-xs font-bold text-slate-805">
+                            <span className="text-xs font-bold text-slate-800">
                               {log.dependencyName}
                             </span>
                           </div>
@@ -1507,7 +1507,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                       </div>
 
                       {/* Subject and Body disclosure */}
-                      <div className="p-2.5 bg-slate-50 rounded border text-[11.5px] text-slate-650 font-sans space-y-1 shadow-3xs hover:border-slate-300">
+                      <div className="p-2.5 bg-slate-50 rounded border text-[11.5px] text-slate-600 font-sans space-y-1 shadow-3xs hover:border-slate-350">
                         <div className="font-bold text-slate-800 pb-1 border-b">
                           Asunto: {log.subject}
                         </div>
@@ -1552,10 +1552,9 @@ DGCH, Órgano de Fiscalización Estatal.`;
             {/* Modal Body / Form */}
             <form onSubmit={handleCreateDependency} className="p-5 space-y-4 text-left">
               
-              {/* Dependency Name */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
-                  Nombre Oficial de la Dependencia <span className="text-indigo-650 font-bold">*</span>
+                  Nombre Oficial de la Dependencia <span className="text-indigo-600 font-bold">*</span>
                 </label>
                 <div className="relative">
                   <Building2 className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
@@ -1565,7 +1564,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                     value={regName}
                     onChange={e => setRegName(e.target.value)}
                     placeholder="Ej. Secretaría de Finanzas y Planeación"
-                    className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-505 focus:outline-hidden text-slate-850 placeholder-slate-400 font-semibold"
+                    className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 placeholder-slate-400 font-semibold"
                   />
                 </div>
               </div>
@@ -1573,7 +1572,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
               {/* Enlace / Encargado Administrativo */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
-                  Encargado Administrativo / Titular <span className="text-indigo-650 font-bold">*</span>
+                  Encargado Administrativo / Titular <span className="text-indigo-600 font-bold">*</span>
                 </label>
                 <div className="relative">
                   <User className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
@@ -1583,7 +1582,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                     value={regManager}
                     onChange={e => setRegManager(e.target.value)}
                     placeholder="Ej. Dr. Andrés Manuel Ordóñez"
-                    className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-505 focus:outline-hidden text-slate-850 placeholder-slate-400"
+                    className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 placeholder-slate-400"
                   />
                 </div>
               </div>
@@ -1591,7 +1590,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
               {/* Contact Email */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
-                  Correo Institucional de Contacto <span className="text-indigo-650 font-bold">*</span>
+                  Correo Institucional de Contacto <span className="text-indigo-600 font-bold">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
@@ -1601,7 +1600,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                     value={regEmail}
                     onChange={e => setRegEmail(e.target.value)}
                     placeholder="enlace.solventacion@estado.gob.mx"
-                    className="w-full text-xs font-mono pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-505 focus:outline-hidden text-slate-850 placeholder-slate-400"
+                    className="w-full text-xs font-mono pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 placeholder-slate-400"
                   />
                 </div>
               </div>
@@ -1617,7 +1616,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                     required
                     value={regAlert}
                     onChange={e => setRegAlert(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-505 focus:outline-hidden text-slate-805 font-mono"
+                    className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 font-mono"
                   />
                 </div>
 
@@ -1630,7 +1629,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                     required
                     value={regDeadline}
                     onChange={e => setRegDeadline(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-505 focus:outline-hidden text-slate-805 font-mono"
+                    className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 font-mono"
                   />
                 </div>
               </div>
@@ -1643,7 +1642,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                 <select
                   value={regStatus}
                   onChange={e => setRegStatus(e.target.value as Dependency['status'])}
-                  className="w-full text-xs p-2 bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-505 focus:outline-hidden text-slate-805 font-semibold text-slate-800"
+                  className="w-full text-xs p-2 bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-800 font-semibold"
                 >
                   <option value="al-corriente">✅ Al Corriente / trámite ordinario</option>
                   <option value="alerta-activa">⚠️ Alerta Activa / plazos próximos</option>
@@ -1664,7 +1663,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                 <button
                   type="submit"
                   disabled={isRegistering}
-                  className="bg-indigo-605 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Check className="w-4 h-4 text-indigo-200" />
                   {isRegistering ? 'Procesando...' : 'Registrar y Guardar'}

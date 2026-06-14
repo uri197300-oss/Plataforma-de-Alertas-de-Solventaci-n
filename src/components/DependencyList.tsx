@@ -82,7 +82,7 @@ export default function DependencyList({ dependencies, selectedId, onSelect }: D
           className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer ${
             filter === "all"
               ? "bg-slate-800 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-150"
+              : "text-slate-600 hover:bg-slate-100"
           }`}
         >
           Todas
@@ -112,7 +112,7 @@ export default function DependencyList({ dependencies, selectedId, onSelect }: D
           className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer flex items-center gap-1 ${
             filter === "solventado"
               ? "bg-emerald-600 text-white shadow-xs"
-              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-150"
+              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
           }`}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Solventados
@@ -122,7 +122,7 @@ export default function DependencyList({ dependencies, selectedId, onSelect }: D
           className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer flex items-center gap-1 ${
             filter === "al-corriente"
               ? "bg-blue-600 text-white shadow-xs"
-              : "bg-blue-50 text-blue-700 hover:bg-blue-150"
+              : "bg-blue-50 text-blue-700 hover:bg-blue-100"
           }`}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Al Corriente
@@ -143,7 +143,7 @@ export default function DependencyList({ dependencies, selectedId, onSelect }: D
             // Determine status representation colors
             let statusBadge = "";
             if (dep.status === "alerta-activa") {
-              statusBadge = "bg-amber-550 border-amber-500 text-amber-700 font-semibold";
+              statusBadge = "bg-amber-500 border-amber-500 text-amber-700 font-semibold";
             } else if (dep.status === "vencido") {
               statusBadge = "bg-rose-50 border-rose-200 text-rose-700 font-semibold";
             } else if (dep.status === "solventado") {
@@ -194,7 +194,7 @@ export default function DependencyList({ dependencies, selectedId, onSelect }: D
                     <span className="truncate">{dep.email}</span>
                   </div>
                   
-                  <div className="flex items-center gap-1 font-medium bg-slate-50 text-slate-650 px-2 py-0.5 rounded border border-slate-100">
+                  <div className="flex items-center gap-1 font-medium bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-100">
                     <Calendar className="w-3 h-3 text-slate-400" />
                     <span>{getDaysLabel(dep)}</span>
                   </div>
