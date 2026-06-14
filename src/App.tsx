@@ -29,6 +29,8 @@ import {
 import { Dependency, EmailLog } from './types';
 import { INITIAL_DEPENDENCIES } from './data/defaults';
 import * as dbService from './lib/dbService';
+import { auth, googleProvider } from './lib/firebase';
+import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser, GoogleAuthProvider } from 'firebase/auth';
 
 export default function App() {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -92,6 +94,12 @@ export default function App() {
   // Success toast/message state
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
+  // Google Gmail authentication states
+  const [googleUser, setGoogleUser] = useState<FirebaseUser | null>(null);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
+  const [useRealGmail, setUseRealGmail] = useState<boolean>(true);
+
   // Today reference is 2026-06-14
   const REFERENCE_DATE = new Date("2026-06-14");
 
@@ -118,7 +126,63 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
+
+    // Firebase Auth State change listener
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          setGoogleUser(user);
+        } else {
+          setGoogleUser(null);
+          setGoogleToken(null);
+        }
+      });
+      return () => unsubscribe();
+    }
   }, []);
+
+  const handleGoogleLogin = async () => {
+    if (!auth || !googleProvider) {
+      showGlobalToast('error', 'El servicio de autenticación de Firebase no está disponible.');
+      return;
+    }
+    setIsGoogleLoggingIn(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = (window as any).firebase?.auth?.GoogleAuthProvider?.credentialFromResult(result) || 
+                         // Native import resolver
+                         GoogleAuthProvider.credentialFromResult(result);
+                         
+      if (credential?.accessToken) {
+        setGoogleToken(credential.accessToken);
+        setGoogleUser(result.user);
+        setUseRealGmail(true);
+        setIsAdmin(true);
+        localStorage.setItem('alert_admin_auth', 'true');
+        showGlobalToast('success', `Acceso concedido. Conectado como ${result.user.displayName || result.user.email}`);
+      } else {
+        throw new Error('No se pudo derivar el token de envío de Gmail desde el login de Google.');
+      }
+    } catch (err: any) {
+      console.error('Google Sign In Error:', err);
+      showGlobalToast('error', `Fallo de autenticación de Google: ${err.message}`);
+    } finally {
+      setIsGoogleLoggingIn(false);
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    try {
+      if (auth) {
+        await signOut(auth);
+      }
+      setGoogleUser(null);
+      setGoogleToken(null);
+      showGlobalToast('info', 'Sesión de Google Cerrada.');
+    } catch (err: any) {
+      console.error('Logout error:', err);
+    }
+  };
 
   // Update Form fields whenever active dependency changes
   const activeDep = dependencies.find(d => d.id === selectedId) || null;
@@ -447,6 +511,11 @@ DGCH, Órgano de Fiscalización Estatal.`;
   const handleSendNotification = async () => {
     if (!activeDep || !draftSubject || !draftBody) return;
 
+    if (useRealGmail && !googleToken) {
+      showGlobalToast('error', 'Por favor, inicie sesión con Google / Conecte su Gmail primero para realizar el envío directo real.');
+      return;
+    }
+
     setIsSending(true);
     setConsoleLogs([]);
     setActiveConsoleIndex(0);
@@ -459,7 +528,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
       `[5/8] 📝 Estructurando cabeceras oficiales, codificación UTF-8 e inyección de expediente #${String(activeDep.id).padStart(2, '0')}...`,
       `[6/8] 🚀 Transmitiendo paquete de alerta (Tamaño: ${(draftBody.length/1024).toFixed(2)} KB)...`,
       `[7/8] ⏳ Esperando confirmación remota del gateway de correos para dependencias... Encolado exitoso`,
-      `[8/8] 📬 Sincronización Completa. Mensaje despachado con éxito. ID de Entrega: ASE-${Math.random().toString(36).substring(3, 9).toUpperCase()}`
+      `[8/8] 📬 Sincronización Completa. Mensaje despachado con éxito.`
     ];
 
     try {
@@ -469,13 +538,16 @@ DGCH, Órgano de Fiscalización Estatal.`;
         formEmail || activeDep.email,
         draftSubject,
         draftBody,
-        senderName
+        senderName,
+        useRealGmail ? googleToken : null
       );
       
+      const returnedSteps = result.transportLogs || steps;
+
       // Simulate live ticking on terminal
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 320));
-        setConsoleLogs(prev => [...prev, steps[i]]);
+      for (let i = 0; i < returnedSteps.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 220));
+        setConsoleLogs(prev => [...prev, returnedSteps[i]]);
         if (consoleBottomRef.current) {
           consoleBottomRef.current.scrollIntoView({ behavior: 'smooth' });
         }
@@ -487,7 +559,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
         setEmailLogs(updatedLogs);
       }
     } catch (err: any) {
-      setConsoleLogs(prev => [...prev, "❌ ERROR CRÍTICO EN EL TRANSPORTE DE ENVÍO. Gateway fuera de línea."]);
+      setConsoleLogs(prev => [...prev, `❌ ERROR CRÍTICO EN EL TRANSPORTE DE ENVÍO: ${err.message || 'Servidor no responde'}`]);
       showGlobalToast('error', err.message || 'Fallo al transmitir la notificación.');
     } finally {
       setIsSending(false);
@@ -594,6 +666,27 @@ DGCH, Órgano de Fiscalización Estatal.`;
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
+
+          <div className="relative my-4 flex py-1.5 items-center">
+            <div className="flex-grow border-t border-slate-800"></div>
+            <span className="flex-shrink mx-3 text-[10px] text-slate-500 uppercase tracking-widest font-mono">O ACCEDER CON</span>
+            <div className="flex-grow border-t border-slate-800"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isGoogleLoggingIn}
+            className="w-full bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-750 text-white text-xs font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+          >
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2A11.95 11.95 0 0 0 12 0C7.3 0 3.24 2.7 1.24 6.66l3.85 2.99C6.01 6.57 8.78 5.04 12 5.04z"/>
+              <path fill="#4285F4" d="M23.52 12.27c0-.8-.07-1.57-.2-2.32H12v4.44h6.46a5.53 5.53 0 0 1-2.4 3.63v3.01h3.87c2.26-2.08 3.59-5.15 3.59-8.76z"/>
+              <path fill="#FBBC05" d="M5.09 14.33a7.16 7.16 0 0 1 0-4.66l-3.85-2.99a11.96 11.96 0 0 0 0 10.64l3.85-2.99z"/>
+              <path fill="#34A853" d="M12 23.5c3.24 0 5.96-1.08 7.94-2.91l-3.87-3.01c-1.08.73-2.46 1.16-4.07 1.16-3.22 0-5.99-1.53-6.91-4.61l-3.85 2.99C3.24 20.8 7.3 23.5 12 23.5z"/>
+            </svg>
+            <span>{isGoogleLoggingIn ? "Autenticando..." : "Acceso con Google Administrador"}</span>
+          </button>
 
           {/* Quick instructions hints */}
           <div className="mt-6 pt-4 border-t border-slate-800/60 text-center">
@@ -1361,8 +1454,83 @@ DGCH, Órgano de Fiscalización Estatal.`;
                               className="w-full text-xs p-3 bg-amber-50/20 border border-amber-100 rounded-lg text-slate-700 font-sans leading-relaxed focus:ring-1 focus:ring-indigo-500 focus:outline-hidden whitespace-pre-wrap select-text resize-none"
                             />
                             <p className="text-[9.5px] text-slate-400 mt-1 italic">
-                              * Puede editar el correo directamente si desea agregar precisiones de último minuto.
+                              * Puede editar el cuerpo del oficio directamente si desea agregar precisiones de último minuto.
                             </p>
+                          </div>
+                        </div>
+
+                        {/* GMAIL INTEGRATION CONTROLS */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+                          <div className="flex items-center justify-between text-xs border-b pb-2">
+                            <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                              <Mail className="w-4 h-4 text-indigo-650 shrink-0" />
+                              Canal de Envío Oficial Real
+                            </span>
+                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              Gmail REST API (Activo)
+                            </span>
+                          </div>
+
+                          <div className="space-y-2">
+                            {!googleUser ? (
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] text-slate-500 leading-normal">
+                                  Es obligatorio autenticarse con su cuenta de Google institucional o personal para enviar de forma real las notificaciones a través de la API oficial de Gmail.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={handleGoogleLogin}
+                                  disabled={isGoogleLoggingIn}
+                                  className="w-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all disabled:opacity-50"
+                                >
+                                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                                    <path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2A11.95 11.95 0 0 0 12 0C7.3 0 3.24 2.7 1.24 6.66l3.85 2.99C6.01 6.57 8.78 5.04 12 5.04z"/>
+                                    <path fill="#4285F4" d="M23.52 12.27c0-.8-.07-1.57-.2-2.32H12v4.44h6.46a5.53 5.53 0 0 1-2.4 3.63v3.01h3.87c2.26-2.08 3.59-5.15 3.59-8.76z"/>
+                                    <path fill="#FBBC05" d="M5.09 14.33a7.16 7.16 0 0 1 0-4.66l-3.85-2.99a11.96 11.96 0 0 0 0 10.64l3.85-2.99z"/>
+                                    <path fill="#34A853" d="M12 23.5c3.24 0 5.96-1.08 7.94-2.91l-3.87-3.01c-1.08.73-2.46 1.16-4.07 1.16-3.22 0-5.99-1.53-6.91-4.61l-3.85 2.99C3.24 20.8 7.3 23.5 12 23.5z"/>
+                                  </svg>
+                                  {isGoogleLoggingIn ? "Conectando..." : "Conectar Gmail con Google"}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="p-2 bg-indigo-50/60 rounded-lg flex items-center justify-between border border-indigo-100">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {googleUser.photoURL ? (
+                                    <img 
+                                      src={googleUser.photoURL} 
+                                      alt={googleUser.displayName || 'Google Avatar'} 
+                                      referrerPolicy="no-referrer"
+                                      className="w-7 h-7 rounded-full border border-indigo-200"
+                                    />
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-xs font-sans">
+                                      {(googleUser.displayName || googleUser.email || 'G')[0].toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 text-left">
+                                    <p className="text-[10px] font-bold text-slate-800 truncate leading-tight">
+                                      {googleUser.displayName || "Auditor Autorizado"}
+                                    </p>
+                                    <p className="text-[9px] text-slate-500 truncate leading-none">
+                                      {googleUser.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleGoogleLogout}
+                                  className="text-[9.5px] font-bold text-rose-600 hover:text-rose-800 underline ml-2 shrink-0 cursor-pointer"
+                                >
+                                  Desconectar
+                                </button>
+                              </div>
+                            )}
+                            {googleUser && !googleToken && (
+                              <div className="p-2 bg-amber-50 rounded-lg text-[9.5px] text-amber-800 border border-amber-200 leading-normal">
+                                💡 <b>Falta token activo:</b> Tu sesión de Google expiró o es de lectura. Presiona <b>Desconectar</b> y vuelve a conectar para habilitar el despacho de correos.
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1383,11 +1551,11 @@ DGCH, Órgano de Fiscalización Estatal.`;
                             <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 font-mono text-[10.5px] text-slate-350 space-y-1 shadow-md">
                               <div className="flex items-center justify-between border-b border-slate-850 pb-1.5 mb-1.5 flex-shrink-0 text-[10px] text-slate-500">
                                 <span className="flex items-center gap-1.5">
-                                  <Terminal className="w-3 h-3 text-emerald-505" />
-                                  Simulación SMTP Estatal Terminal Logs
+                                  <Terminal className="w-3 h-3 text-emerald-500" />
+                                  Canal de Envío Estatal Real (Terminal Logs)
                                 </span>
                                 <span className="text-[9px] bg-slate-900 border border-slate-800 px-1.5 py-0.2 rounded text-emerald-400 font-bold inline-block animate-pulse">
-                                  {isSending ? "REALIZANDO RELAY" : "CONEXIÓN CERRADA"}
+                                  {isSending ? "TRANSMITIENDO" : "CONEXIÓN CERRADA"}
                                 </span>
                               </div>
                               

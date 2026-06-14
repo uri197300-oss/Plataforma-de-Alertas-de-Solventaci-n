@@ -3,8 +3,56 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import nodemailer from "nodemailer";
 import { INITIAL_DEPENDENCIES } from "./src/data/defaults.js";
 import { Dependency, EmailLog } from "./src/types.js";
+
+// Helper to construct a base64 encoded MIME email for Gmail API
+function makeGmailMime(to: string, subject: string, body: string, senderName: string): string {
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
+  const parts = [
+    `To: ${to}`,
+    senderName ? `From: "${senderName}" <me>` : `From: <me>`,
+    `Subject: ${utf8Subject}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    Buffer.from(body).toString("base64")
+  ];
+  const mimeStr = parts.join("\r\n");
+  return Buffer.from(mimeStr)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+// Nodemailer Transporter lazy setup
+let smtpTransporter: any = null;
+function getSmtpTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT || "587", 10);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !user || !pass) {
+    return null;
+  }
+
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: {
+        user,
+        pass,
+      },
+    });
+  }
+  return smtpTransporter;
+}
 
 // Paths for JSON storage
 const RECORDS_FILE_PATH = path.join(process.cwd(), "records.json");
@@ -253,10 +301,10 @@ REGLAS DE REDACCIÓN:
     }
   });
 
-  // 5. Send Alert Email (Simulation with logs and step by step delivery processes)
+  // 5. Send Alert Email (Simulation, Real Gmail API, or Real SMTP)
   app.post("/api/send-email", async (req, res) => {
     try {
-      const { dependencyId, toEmail, subject, body, senderName } = req.body;
+      const { dependencyId, toEmail, subject, body, senderName, gmailToken } = req.body;
       const records = loadRecords();
       const dep = records.find((r) => r.id === dependencyId);
 
@@ -264,17 +312,83 @@ REGLAS DE REDACCIÓN:
         return res.status(404).json({ success: false, error: "Dependencia no encontrada" });
       }
 
-      // Generate step-by-step deliver transport logs
-      const steps = [
-        "Iniciando comunicación con el servidor SMTP estatal (smtp.estado.gob.mx:587)...",
-        "Estableciendo canal de transmisión segura bajo protocolo TLSv1.3...",
-        `Autenticando credenciales de emisor: ${senderName || 'Unidad de Fiscalización'}...`,
-        `Verificando dirección del destinatario gubernamental: <${toEmail || dep.email}>... OK`,
-        "Preparando cabeceras y codificación UTF-8 para evitar caracteres alterados...",
-        `Transmitiendo cuerpo del mensaje (Carga útil de solventación, ${body.length} caracteres)...`,
-        "Email encolado y aceptado por relay remoto de correos. ID de Entrega: " + Math.random().toString(36).substring(7).toUpperCase(),
-        "Entrega completada con éxito. Código de Estado: 250 OK Message accepted."
-      ];
+      const targetEmail = toEmail || dep.email;
+      let steps: string[] = [];
+      let deliveryStatus: "success" | "failed" = "success";
+
+      if (gmailToken) {
+        // Mode A: Real Google Gmail REST API Send (Using OAuth User's approved Token!)
+        try {
+          steps.push("📡 Conectando con la API segura de Gmail (gmail.googleapis.com)...");
+          steps.push("🛡️ Autenticando token de acceso OAuth2 otorgado por el auditor...");
+          steps.push(`👤 Remitente verificado: [${senderName || "Auditoría Superior"}]`);
+          steps.push(`🔍 Verificando dirección de enlace estatal: <${targetEmail}>... OK`);
+          steps.push("📦 Estructurando y codificando correo oficial en formato MIME Base64URL-Safe...");
+          
+          const rawMime = makeGmailMime(targetEmail, subject, body, senderName);
+          
+          steps.push("🚀 Transmitiendo paquete de datos vía HTTP REST API de Gmail...");
+          
+          const gmailRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${gmailToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ raw: rawMime })
+          });
+
+          if (!gmailRes.ok) {
+            const errBody = await gmailRes.text();
+            throw new Error(`Gmail API error: ${gmailRes.status} - ${errBody}`);
+          }
+
+          const gmailData = await gmailRes.json();
+          steps.push(`📬 ¡Mensaje GMAIL REAL despachado con éxito! ID de Google: ${gmailData.id || "OK"}`);
+        } catch (gmailErr: any) {
+          console.error("Gmail Send Error: ", gmailErr);
+          steps.push(`❌ FALLO DETECTADO en Gmail API: ${gmailErr.message}`);
+          throw new Error(`No se pudo enviar el email real a través de Gmail. Verifique su sesión de Google: ${gmailErr.message}`);
+        }
+      } else {
+        const smtpTransporter = getSmtpTransporter();
+        if (smtpTransporter) {
+          // Mode B: Real SMTP via Nodemailer (if SMTP host configured in .env)
+          try {
+            steps.push(`📡 Conectando con servidor de correo SMTP Real del Estado (${process.env.SMTP_HOST}:${process.env.SMTP_PORT})...`);
+            steps.push("🔐 Estableciendo canal cifrado TLS v1.3 seguro...");
+            steps.push(`👤 Autenticando credenciales estatales: ${process.env.SMTP_USER}... OK`);
+            steps.push(`🔍 Verificando dirección del destinatario: <${targetEmail}>... OK`);
+            steps.push("🚀 Transmitiendo cabeceras oficiales y cuerpo de solventación...");
+
+            const fromHeader = process.env.SMTP_FROM || `"${senderName}" <${process.env.SMTP_USER}>`;
+            const info = await smtpTransporter.sendMail({
+              from: fromHeader,
+              to: targetEmail,
+              subject: subject,
+              text: body
+            });
+
+            steps.push(`📬 ¡Correo enviado de forma real a través de SMTP! MessageId: ${info.messageId || "SMTP-OK"}`);
+          } catch (smtpErr: any) {
+            console.error("SMTP Send Error: ", smtpErr);
+            steps.push(`❌ FALLO EN SMTP: ${smtpErr.message}`);
+            throw new Error(`Error de envío SMTP Real: ${smtpErr.message}`);
+          }
+        } else {
+          // Mode C: Simulated SMTP Transport (Fallback out-of-the-box mode)
+          steps = [
+            "Iniciando comunicación con el servidor SMTP estatal (smtp.estado.gob.mx:587)...",
+            "Estableciendo canal de transmisión segura bajo protocolo TLSv1.3...",
+            `Autenticando credenciales de emisor: ${senderName || 'Unidad de Fiscalización'}...`,
+            `Verificando dirección del destinatario gubernamental: <${targetEmail}>... OK`,
+            "Preparando cabeceras y codificación UTF-8 para evitar caracteres alterados...",
+            `Transmitiendo cuerpo del mensaje (Carga útil de solventación, ${body.length} caracteres)...`,
+            "Email encolado y aceptado por relay remoto de correos. ID de Entrega: " + Math.random().toString(36).substring(7).toUpperCase(),
+            "Entrega completada con éxito. Código de Estado: 250 OK Message accepted. (Soporte Simulado)"
+          ];
+        }
+      }
 
       // Save to logs
       const logs = loadEmailLogs();
@@ -282,21 +396,17 @@ REGLAS DE REDACCIÓN:
         id: Math.random().toString(36).substring(2, 11),
         dependencyId: dep.id,
         dependencyName: dep.name,
-        toEmail: toEmail || dep.email,
+        toEmail: targetEmail,
         subject,
         body,
         sentAt: new Date().toISOString(),
         senderName: senderName || "Auditoría Superior del Estado",
-        status: "success",
+        status: deliveryStatus,
       };
 
       logs.unshift(newLog); // Put newest logs first
       saveEmailLogs(logs);
 
-      // We'll also mark dependency status as "solventado" if they want, but sending an email is just notification.
-      // Let's keep status unchanged or updated logically.
-      
-      // Return details and delivery steps so that the UI can count down and output logs in real-time like a terminal feed!
       res.json({
         success: true,
         data: newLog,

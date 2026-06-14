@@ -1,10 +1,11 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 let firebaseApp: any = null;
 let db: any = null;
 let auth: any = null;
+let googleProvider: GoogleAuthProvider | null = null;
 
 // Try to load from the static local config file, which is created by set_up_firebase
 // and would also be bundled/deployed for the user!
@@ -33,10 +34,18 @@ try {
     firebaseApp = initializeApp(firebaseConfig);
     db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || undefined);
     auth = getAuth(firebaseApp);
+    
+    // Set up Google OAuth provider with requested scopes
+    googleProvider = new GoogleAuthProvider();
+    googleProvider.addScope("https://www.googleapis.com/auth/gmail.send");
+    googleProvider.addScope("https://www.googleapis.com/auth/userinfo.email");
+    googleProvider.addScope("https://www.googleapis.com/auth/userinfo.profile");
+
     console.log("Firebase initialized successfully with Project ID:", firebaseConfig.projectId);
   }
 } catch (error) {
   console.warn("Firebase not fully configured or failed to initialize, falling back to local Express server mode.", error);
 }
 
-export { firebaseApp, db, auth };
+export { firebaseApp, db, auth, googleProvider };
+

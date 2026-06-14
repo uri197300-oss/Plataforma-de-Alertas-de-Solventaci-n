@@ -250,71 +250,50 @@ export async function getEmailLogs(): Promise<EmailLog[]> {
   }
 }
 
-// 8. Add email log and simulate
+// 8. Add email log and dispatch
 export async function sendAndLogEmail(
   dependencyId: number,
   dependencyName: string,
   toEmail: string,
   subject: string,
   body: string,
-  senderName: string
+  senderName: string,
+  gmailToken?: string | null
 ): Promise<{ success: boolean; log: EmailLog; transportLogs: string[] }> {
-  const steps = [
-    "Iniciando comunicación con el servidor SMTP estatal (smtp.estado.gob.mx:587)...",
-    "Estableciendo canal de transmisión segura bajo protocolo TLSv1.3...",
-    `Autenticando credenciales de emisor: ${senderName || 'Unidad de Fiscalización'}...`,
-    `Verificando dirección del destinatario gubernamental: <${toEmail}>... OK`,
-    "Preparando cabeceras y codificación UTF-8 para evitar caracteres alterados...",
-    `Transmitiendo cuerpo del mensaje (Carga útil de solventación, ${body.length} caracteres)...`,
-    "Email encolado y aceptado por relay remoto de correos. ID de Entrega: " + Math.random().toString(36).substring(7).toUpperCase(),
-    "Entrega completada con éxito. Código de Estado: 250 OK Message accepted."
-  ];
+  // Always call the server endpoint to dispatch (whether simulation, Gmail API, or SMTP)
+  const res = await fetch("/api/send-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dependencyId,
+      toEmail,
+      subject,
+      body,
+      senderName,
+      gmailToken: gmailToken || null
+    })
+  });
+  
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || "Failed to dispatch email via server");
 
-  const newLog: EmailLog = {
-    id: Math.random().toString(36).substring(2, 11),
-    dependencyId,
-    dependencyName,
-    toEmail,
-    subject,
-    body,
-    sentAt: new Date().toISOString(),
-    senderName: senderName || "Departamento de Innovación Administrativa",
-    status: "success",
+  const serverLog: EmailLog = data.data;
+
+  // If Firebase Firestore is enabled, sync the log entry in the cloud database
+  if (isFirebaseEnabled()) {
+    const path = `emailLogs/${serverLog.id}`;
+    try {
+      await setDoc(doc(db, "emailLogs", serverLog.id), serverLog);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  return {
+    success: true,
+    log: serverLog,
+    transportLogs: data.transportLogs
   };
-
-  if (!isFirebaseEnabled()) {
-    const res = await fetch("/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dependencyId,
-        toEmail,
-        subject,
-        body,
-        senderName
-      })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || "Failed to dispatch email via server");
-    return {
-      success: true,
-      log: data.data,
-      transportLogs: data.transportLogs
-    };
-  }
-
-  const path = `emailLogs/${newLog.id}`;
-  try {
-    await setDoc(doc(db, "emailLogs", newLog.id), newLog);
-    return {
-      success: true,
-      log: newLog,
-      transportLogs: steps
-    };
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
-    throw error;
-  }
 }
 
 // 9. Clear email logs
