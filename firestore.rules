@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128 && id.matches("^[a-zA-Z0-9_-]+$");
     }
 
     function isValidDependency(data) {
@@ -28,7 +28,7 @@ service cloud.firestore {
         && data.deadlineDate is string && data.deadlineDate.size() <= 20
         && data.alertDate is string && data.alertDate.size() <= 20
         && data.observations is list && data.observations.size() <= 50
-        && data.status is string && (data.status == 'al-corriente' || data.status == 'alerta-activa' || data.status == 'vencido' || data.status == 'solventado');
+        && data.status is string && (data.status == "al-corriente" || data.status == "alerta-activa" || data.status == "vencido" || data.status == "solventado");
     }
 
     function isValidEmailLog(data) {
@@ -40,7 +40,7 @@ service cloud.firestore {
         && data.body is string && data.body.size() <= 5000
         && data.sentAt is string && data.sentAt.size() <= 50
         && data.senderName is string && data.senderName.size() <= 200
-        && data.status is string && (data.status == 'success' || data.status == 'failed');
+        && data.status is string && (data.status == "success" || data.status == "failed");
     }
 
     // Collection bindings
