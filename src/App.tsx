@@ -98,7 +98,6 @@ export default function App() {
   const [googleUser, setGoogleUser] = useState<FirebaseUser | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
-  const [useRealGmail, setUseRealGmail] = useState<boolean>(true);
 
   // Today reference is 2026-06-14
   const REFERENCE_DATE = new Date("2026-06-14");
@@ -156,7 +155,6 @@ export default function App() {
       if (credential?.accessToken) {
         setGoogleToken(credential.accessToken);
         setGoogleUser(result.user);
-        setUseRealGmail(true);
         setIsAdmin(true);
         localStorage.setItem('alert_admin_auth', 'true');
         showGlobalToast('success', `Acceso concedido. Conectado como ${result.user.displayName || result.user.email}`);
@@ -511,7 +509,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
   const handleSendNotification = async () => {
     if (!activeDep || !draftSubject || !draftBody) return;
 
-    if (useRealGmail && !googleToken) {
+    if (!googleToken) {
       showGlobalToast('error', 'Por favor, inicie sesión con Google / Conecte su Gmail primero para realizar el envío directo real.');
       return;
     }
@@ -539,7 +537,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
         draftSubject,
         draftBody,
         senderName,
-        useRealGmail ? googleToken : null
+        googleToken
       );
       
       const returnedSteps = result.transportLogs || steps;
@@ -1120,7 +1118,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                 <div className="flex-1 grid grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 overflow-hidden min-h-0">
                   
                   {/* Left Half: Dependency Parameters and Observation Editor (6 cols) */}
-                  <form onSubmit={handleSaveDependency} className="col-span-12 lg:col-span-5 p-4 overflow-y-auto space-y-4 max-h-full">
+                  <form onSubmit={handleSaveDependency} className="col-span-12 lg:col-span-5 p-4 overflow-y-auto space-y-4 h-[550px] lg:h-full">
                     
                     <div className="flex justify-between items-center border-b pb-2">
                       <div className="flex items-center gap-1 text-slate-800">
@@ -1311,7 +1309,7 @@ DGCH, Órgano de Fiscalización Estatal.`;
                   </form>
 
                   {/* Right Half: AI Draft generator, live document envelope & Dispatch SMTP Terminal (7 cols) */}
-                  <div className="col-span-12 lg:col-span-7 bg-slate-50/50 p-4 flex flex-col overflow-y-auto max-h-full space-y-4">
+                  <div className="col-span-12 lg:col-span-7 bg-slate-50/50 p-4 flex flex-col overflow-y-auto h-[600px] lg:h-full space-y-4">
                     
                     <div className="border-b pb-2 flex justify-between items-center">
                       <div className="flex items-center gap-1.5 text-slate-800">
