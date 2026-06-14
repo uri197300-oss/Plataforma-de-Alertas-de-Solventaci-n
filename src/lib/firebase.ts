@@ -31,6 +31,7 @@ try {
   }
 
   if (firebaseConfig && firebaseConfig.projectId && (firebaseConfig.apiKey || import.meta.env.VITE_FIREBASE_API_KEY)) {
+    console.log("Initializing Firebase with project:", firebaseConfig.projectId, "and database:", firebaseConfig.firestoreDatabaseId || "default");
     firebaseApp = initializeApp(firebaseConfig);
     db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || undefined);
     auth = getAuth(firebaseApp);
@@ -41,7 +42,7 @@ try {
     googleProvider.addScope("https://www.googleapis.com/auth/userinfo.email");
     googleProvider.addScope("https://www.googleapis.com/auth/userinfo.profile");
 
-    console.log("Firebase initialized successfully with Project ID:", firebaseConfig.projectId);
+    console.log("Firebase initialized successfully. Firestore connected to:", firebaseConfig.firestoreDatabaseId || "default");
   }
 } catch (error) {
   console.warn("Firebase not fully configured or failed to initialize, falling back to local Express server mode.", error);
