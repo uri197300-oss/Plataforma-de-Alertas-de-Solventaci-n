@@ -239,23 +239,33 @@ async function startServer() {
   // 4. Generate AI Personal Alert Email
   app.post("/api/generate-alert-email", async (req, res) => {
     try {
-      const { dependencyId, tone, observationsToInclude, additionalNotes, senderName } = req.body;
+      const { 
+        dependencyId, 
+        dependencyName, 
+        managerName, 
+        deadlineDate, 
+        tone, 
+        observationsToInclude, 
+        additionalNotes, 
+        senderName 
+      } = req.body;
       
       const records = loadRecords();
       const dep = records.find((r) => r.id === dependencyId);
-      if (!dep) {
-        return res.status(404).json({ success: false, error: "Dependencia no encontrada" });
-      }
+
+      const finalName = dependencyName || (dep ? dep.name : `Dependencia #${dependencyId}`);
+      const finalManager = managerName || (dep ? dep.managerName : "Encargado de Solventación");
+      const finalDeadline = deadlineDate || (dep ? dep.deadlineDate : "Plazo Improrrogable");
 
       // Check key & fetch client
       const ai = getGeminiClient();
 
       // Formulate prompt
       const prompt = `
-Eres un Oficial Mayor de la Oficina de Control y Auditoría del Gobierno del Estado. Tu objetivo es redactar un oficio/correo formal de alerta de tiempos de solventación dirigido a la dependencia gubernamental: "${dep.name}".
+Eres un Oficial Mayor de la Oficina de Control y Auditoría del Gobierno del Estado. Tu objetivo es redactar un oficio/correo formal de alerta de tiempos de solventación dirigido a la dependencia gubernamental: "${finalName}".
 Información útil:
-- Encargado/Director: ${dep.managerName}
-- Fecha limite de solventación obligatoria: ${dep.deadlineDate}
+- Encargado/Director: ${finalManager}
+- Fecha limite de solventación obligatoria: ${finalDeadline}
 - Observaciones pendientes por solventar que se deben detallar: ${Array.isArray(observationsToInclude) && observationsToInclude.length > 0 ? observationsToInclude.map(o => '- ' + o).join('\n') : 'Falta de conciliaciones de cuentas generales y entrega de bitácoras oficiales.'}
 - Remitente de la notificación: ${senderName || 'Unidad de Vigilancia y Fiscalización Externa'}
 - Tono solicitado de la comunicación: "${tone || 'formal-enérgico'}" (los tonos disponibles pueden ser 'cordial' (informativo y colaborativo), 'urgente' (atención prioritaria), 'formal-enérgico' (señalamiento directo de leyes de responsabilidades) o 'último-aviso' (notificación extrema de fin de plazo)).
@@ -264,7 +274,7 @@ Información útil:
 REGLAS DE REDACCIÓN:
 1. El correo debe estructurarse obligatoriamente en español mexicano con la jerga de auditoría gubernamental mexicana (menciona términos como "solventar", "órgano interno de control", "Pliego de observaciones", "Plazo improrrogable", "Ley de Responsabilidades Administrativas").
 2. Debe tener un "Asunto" con alta visibilidad y claridad (ej. ASUNTO: Alerta Urgente de Solventación de Observaciones - [Dependencia]).
-3. El cuerpo debe estar redactado de manera profesional, incluyendo el saludo, mención de los compromisos pendientes, consecuencias normativas si no se cumple el plazo con fecha límite ${dep.deadlineDate}, un llamado de acción claro y un cierre formal.
+3. El cuerpo debe estar redactado de manera profesional, incluyendo el saludo, mención de los compromisos pendientes, consecuencias normativas si no se cumple el plazo con fecha límite ${finalDeadline}, un llamado de acción claro y un cierre formal.
 4. Devuelve el resultado exclusivamente en formato JSON estructurado con el siguiente formato, no agregues texto markdown antes ni después del bloque JSON:
 {
   "subject": "[Asunto descriptivo del correo]",
@@ -304,15 +314,17 @@ REGLAS DE REDACCIÓN:
   // 5. Send Alert Email (Simulation, Real Gmail API, or Real SMTP)
   app.post("/api/send-email", async (req, res) => {
     try {
-      const { dependencyId, toEmail, subject, body, senderName, gmailToken } = req.body;
+      const { dependencyId, dependencyName, toEmail, subject, body, senderName, gmailToken } = req.body;
       const records = loadRecords();
       const dep = records.find((r) => r.id === dependencyId);
 
-      if (!dep) {
-        return res.status(404).json({ success: false, error: "Dependencia no encontrada" });
+      const finalName = dependencyName || (dep ? dep.name : `Dependencia #${dependencyId}`);
+      const targetEmail = toEmail || (dep ? dep.email : "");
+
+      if (!targetEmail) {
+        return res.status(400).json({ success: false, error: "No se especificó un correo electrónico de destino para la solventación." });
       }
 
-      const targetEmail = toEmail || dep.email;
       let steps: string[] = [];
       let deliveryStatus: "success" | "failed" = "success";
 
@@ -394,8 +406,8 @@ REGLAS DE REDACCIÓN:
       const logs = loadEmailLogs();
       const newLog: EmailLog = {
         id: Math.random().toString(36).substring(2, 11),
-        dependencyId: dep.id,
-        dependencyName: dep.name,
+        dependencyId: dependencyId || (dep ? dep.id : 0),
+        dependencyName: finalName,
         toEmail: targetEmail,
         subject,
         body,

@@ -67,6 +67,13 @@ export async function getDependencies(): Promise<Dependency[]> {
     snapshot.forEach((docSnap) => {
       list.push(docSnap.data() as Dependency);
     });
+
+    if (list.length === 0) {
+      const { INITIAL_DEPENDENCIES } = await import("../data/defaults");
+      await resetDependencies(INITIAL_DEPENDENCIES);
+      return INITIAL_DEPENDENCIES;
+    }
+
     return list;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
@@ -266,6 +273,7 @@ export async function sendAndLogEmail(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       dependencyId,
+      dependencyName,
       toEmail,
       subject,
       body,
@@ -332,26 +340,29 @@ export async function generateAIAlertEmail(params: {
   senderName: string;
 }): Promise<{ subject: string; body: string }> {
   // Try server-side first
-  if (!isFirebaseEnabled()) {
-    try {
-      const res = await fetch("/api/generate-alert-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dependencyId: params.dependencyId,
-          tone: params.tone,
-          observationsToInclude: params.observationsToInclude,
-          additionalNotes: params.additionalNotes,
-          senderName: params.senderName
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        return data.data;
-      }
-    } catch (err) {
-      console.warn("Server AI route failed, attempting client-side fallback:", err);
+  try {
+    const res = await fetch("/api/generate-alert-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dependencyId: params.dependencyId,
+        dependencyName: params.dependencyName,
+        managerName: params.managerName,
+        deadlineDate: params.deadlineDate,
+        tone: params.tone,
+        observationsToInclude: params.observationsToInclude,
+        additionalNotes: params.additionalNotes,
+        senderName: params.senderName
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      return data.data;
+    } else {
+      console.warn("Server AI route returned failure, attempting client fallback:", data.error);
     }
+  } catch (err) {
+    console.warn("Server AI route failed, attempting client-side fallback:", err);
   }
 
   // Fallback to client-side Generation using VITE_GEMINI_API_KEY
